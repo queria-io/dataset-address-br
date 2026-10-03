@@ -20,6 +20,7 @@ fields:
   - name: pref_code
     title: 都道府県コード
     description: 2桁
+    semantic: { role: entity, name: prefecture }
   - name: pref_name
     title: 都道府県名
   - name: pref_name_kana
