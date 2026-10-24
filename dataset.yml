@@ -11,6 +11,7 @@ keywords:
   - デジタル庁
 homepage: https://github.com/queria-io/dataset-address-br
 language: ja
+themes: [land_climate]
 
 licenses:
   - JP-DIGITAL-ADDRESS-BR
