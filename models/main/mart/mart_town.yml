@@ -45,6 +45,8 @@ models:
         data_type: varchar
       - name: efct_date
         data_type: date
+      - name: rsdt_addr_flg
+        data_type: varchar
       - name: oaza_cho_uncmn_reg
         data_type: varchar
       - name: oaza_cho_uncmn_mj
@@ -73,3 +75,5 @@ models:
         data_type: varchar
       - name: alias_koaza_roma
         data_type: varchar
+      - name: geometry
+        data_type: geometry

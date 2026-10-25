@@ -17,6 +17,7 @@ SELECT
     koaza,
     koaza_kana,
     post_code,
-    efct_date
+    efct_date,
+    rsdt_addr_flg
 FROM {{ ref('raw_mt_town') }}
 WHERE lg_code IS NOT NULL
