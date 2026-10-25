@@ -1,0 +1,6 @@
+schema: main
+name: raw_mt_town_pos
+description: 町字マスタ位置参照拡張
+published: false
+sources:
+  - path: https://dataset.address-br.digital.go.jp/

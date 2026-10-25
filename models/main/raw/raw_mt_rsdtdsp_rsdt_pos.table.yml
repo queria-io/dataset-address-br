@@ -1,0 +1,6 @@
+schema: main
+name: raw_mt_rsdtdsp_rsdt_pos
+description: 住居表示-住居マスタ位置参照拡張
+published: false
+sources:
+  - path: https://dataset.address-br.digital.go.jp/
