@@ -7,9 +7,14 @@
 データ更新手順:
   都道府県・市区町村・町字のマスタは、ABR サイト (https://dataset.address-br.digital.go.jp/)
   から最新の zip をダウンロードし、data/ に配置してコミットする。git 履歴でデータバージョンを追跡できる。
-  位置参照・住居表示のマスタは件数が大きいので git に入れず、ビルドのたびに配信元から取る。
+  位置参照・住居表示のマスタは件数が大きいので git に入れず、ビルドのたびに取る。
+  配信元は国外からの取得を 403 で拒むので（GitHub Actions のランナーは米国）、日本で取った
+  zip の写しを assets.queria.io に置いてそこから取る。写しが無いか合わないときは配信元から取る。
+  写しの作り直しは scripts/refresh_abr_mirror.py を日本から流し、ABR_MIRROR_DATE を書き換える。
 """
 
+import hashlib
+import json
 import logging
 import shutil
 import zipfile
@@ -17,7 +22,7 @@ from pathlib import Path
 
 from dbt.cli.main import dbtRunner
 
-from shared.fetch import download, replacing
+from shared.fetch import download, fetch, replacing
 
 logger = logging.getLogger("pipelines")
 
@@ -25,6 +30,9 @@ DATA_DIR = Path("data")
 ABR_DIR = DATA_DIR / "abr"
 
 ABR_BASE_URL = "https://data.address-br.digital.go.jp"
+# 写しは日付ごとに別の場所に置き、同じ名前で上書きしない（CDN が古い中身を返し続けるため）
+ABR_MIRROR_DATE = "20261026"
+ABR_MIRROR_URL = f"https://assets.queria.io/abr/address-br-{ABR_MIRROR_DATE}"
 USER_AGENT = "dataset-address-br (+https://github.com/queria-io/dataset-address-br)"
 
 ZIPS = [
@@ -90,13 +98,54 @@ def _extract(filename: str) -> None:
         zf.extract(f"{filename}.csv", DATA_DIR)
 
 
+def pref_zip_key(dataset: str, pref_code: str) -> str:
+    """配信元と写しで共通の、zip の置き場所（ABR_BASE_URL / ABR_MIRROR_URL からの相対）。"""
+    return f"{dataset}/pref/{dataset}_pref{pref_code}.csv.zip"
+
+
+def _load_mirror_manifest() -> dict[str, dict]:
+    """写しの目録（キーごとの bytes と sha256）。取れなければ空で、すべて配信元から取る。"""
+    try:
+        body = fetch(f"{ABR_MIRROR_URL}/manifest.json", user_agent=USER_AGENT, not_found_ok=True)
+    except Exception as error:
+        logger.warning(f"  mirror manifest unavailable: {error}")
+        return {}
+    if body is None:
+        logger.warning("  mirror manifest not found; downloading from the origin")
+        return {}
+    return json.loads(body)["files"]
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _download_pref_all() -> None:
+    manifest = _load_mirror_manifest()
     for dataset in PREF_DATASETS:
         for pref_code in PREF_CODES:
-            _download_pref(dataset, pref_code)
+            _download_pref(dataset, pref_code, manifest)
 
 
-def _download_pref(dataset: str, pref_code: str) -> None:
+def _download_zip(key: str, zip_path: Path, manifest: dict[str, dict]) -> None:
+    """写しから取り、目録の sha256 と合えば使う。目録に無い・取れない・合わないときは配信元から取る。"""
+    entry = manifest.get(key)
+    if entry:
+        try:
+            download(f"{ABR_MIRROR_URL}/{key}", zip_path, user_agent=USER_AGENT)
+            if _sha256(zip_path) == entry["sha256"]:
+                return
+            logger.warning(f"  mirror checksum mismatch: {key}")
+        except Exception as error:
+            logger.warning(f"  mirror download failed: {key} ({error})")
+    download(f"{ABR_BASE_URL}/{key}", zip_path, user_agent=USER_AGENT)
+
+
+def _download_pref(dataset: str, pref_code: str, manifest: dict[str, dict]) -> None:
     """都道府県1つ分の zip を取って CSV を展開する。CSV が既に存在すればスキップ。"""
     filename = f"{dataset}_pref{pref_code}.csv"
     out_dir = ABR_DIR / dataset
@@ -109,7 +158,7 @@ def _download_pref(dataset: str, pref_code: str) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     zip_path = out_dir / f"{filename}.zip"
     logger.info(f"  downloading {zip_path.name}...")
-    download(f"{ABR_BASE_URL}/{dataset}/pref/{filename}.zip", zip_path, user_agent=USER_AGENT)
+    _download_zip(pref_zip_key(dataset, pref_code), zip_path, manifest)
 
     # 展開が途中で切れても、書きかけの CSV を取得済みとして残さない
     with zipfile.ZipFile(zip_path) as zf, zf.open(filename) as src, replacing(csv_path) as partial:

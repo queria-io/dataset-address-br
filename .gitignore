@@ -23,3 +23,6 @@ dist/
 
 # 位置参照・住居表示のマスタ（ビルドのたびに配信元から取る）
 data/abr/
+
+# 写しを作るときの作業場所（scripts/refresh_abr_mirror.py）
+data/abr-mirror/
