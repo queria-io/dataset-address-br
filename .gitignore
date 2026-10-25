@@ -20,3 +20,6 @@ data/*.csv
 # Environment
 .env
 dist/
+
+# 位置参照・住居表示のマスタ（ビルドのたびに配信元から取る）
+data/abr/

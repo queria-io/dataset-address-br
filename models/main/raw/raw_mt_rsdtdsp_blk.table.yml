@@ -1,0 +1,6 @@
+schema: main
+name: raw_mt_rsdtdsp_blk
+description: 住居表示-街区マスタ
+published: false
+sources:
+  - path: https://dataset.address-br.digital.go.jp/

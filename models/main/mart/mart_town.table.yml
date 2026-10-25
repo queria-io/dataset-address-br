@@ -56,6 +56,9 @@ fields:
     semantic: { role: entity, name: postal_code }
   - name: efct_date
     title: 効力発生日
+  - name: rsdt_addr_flg
+    title: 住居表示フラグ
+    description: 1 は住居表示を実施している町字（街区・住居は mart_rsdtdsp_blk / mart_rsdtdsp_rsdt にある）、0 は地番で表す町字
   - name: oaza_cho_uncmn_reg
     title: 大字・町外字 正規化
   - name: oaza_cho_uncmn_mj
@@ -84,3 +87,6 @@ fields:
     title: 小字通称名（カナ）
   - name: alias_koaza_roma
     title: 小字通称名（ローマ字）
+  - name: geometry
+    title: 代表点
+    description: '位置参照拡張の代表点座標（経緯度）。元データの測地系は JGD2011 (EPSG:6668) と JGD2000 (EPSG:4612) が混在し、変換していない。代表点の無い町字（主に小字）は NULL'
