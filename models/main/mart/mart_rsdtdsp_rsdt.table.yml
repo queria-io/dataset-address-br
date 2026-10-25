@@ -1,0 +1,42 @@
+schema: main
+name: mart_rsdtdsp_rsdt
+title: 住居表示 住居マスタ
+description: '住居表示を実施している町字の住居（「○丁目1番3号」の「3号」）と、その代表点。
+
+  「アドレス・ベース・レジストリ（住居表示-住居マスタデータ・位置参照拡張）」（デジタル庁）（https://dataset.address-br.digital.go.jp/）を加工して作成。'
+keywords:
+  - 住所
+  - 住居表示
+  - 住居番号
+  - 位置参照
+published: true
+sources:
+  - path: https://dataset.address-br.digital.go.jp/
+fields:
+  - name: lg_code
+    title: 全国地方公共団体コード
+    description: 6桁（検査数字あり）
+    semantic: { role: entity, name: city }
+  - name: machiaza_id
+    title: 町字ID
+    description: mart_town と lg_code・machiaza_id で結合する
+  - name: blk_id
+    title: 街区ID
+    description: mart_rsdtdsp_blk と lg_code・machiaza_id・blk_id で結合する
+  - name: rsdt_id
+    title: 住居ID
+  - name: rsdt2_id
+    title: 住居2ID
+    description: 枝番のある住居のみ（他は NULL）
+  - name: blk_num
+    title: 街区符号
+    description: 住所の「○番」の部分
+  - name: rsdt_num
+    title: 住居番号
+    description: 住所の「○号」の部分
+  - name: rsdt_num2
+    title: 住居番号2
+    description: 住居番号の枝番（「3号の2」の「2」）。無い住居は NULL
+  - name: geometry
+    title: 代表点
+    description: '位置参照拡張の代表点座標（経緯度）。元データの測地系は JGD2011 (EPSG:6668)。代表点が複数ある住居は平均。代表点の無い住居は NULL'

@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: mart_rsdtdsp_rsdt
+    description: |
+      住居表示を実施している町字の住居（「○丁目1番3号」の「3号」）と、その代表点。
+      「アドレス・ベース・レジストリ（住居表示-住居マスタデータ・位置参照拡張）」（デジタル庁）（https://dataset.address-br.digital.go.jp/）を加工して作成。
+    access: public
+    columns:
+      - name: lg_code
+        data_type: varchar
+      - name: machiaza_id
+        data_type: varchar
+      - name: blk_id
+        data_type: varchar
+      - name: rsdt_id
+        data_type: varchar
+      - name: rsdt2_id
+        data_type: varchar
+      - name: blk_num
+        data_type: varchar
+      - name: rsdt_num
+        data_type: varchar
+      - name: rsdt_num2
+        data_type: varchar
+      - name: geometry
+        data_type: geometry
