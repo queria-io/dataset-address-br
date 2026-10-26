@@ -30,13 +30,26 @@ from shared.fetch import download  # noqa: E402
 BUCKET = "queria-assets"
 # FLOPS のアカウント。cf はアカウントを 2 つ持つ環境で非対話だと止まるので明示する
 CLOUDFLARE_ACCOUNT_ID = "57c6a116efc637fc3f21d0affea15508"
+CF_ENV = {**os.environ, "CLOUDFLARE_ACCOUNT_ID": CLOUDFLARE_ACCOUNT_ID}
+
+
+def published(key: str) -> bool:
+    """バケットに key が既にあるか。"""
+    result = subprocess.run(
+        ["cf", "r2", "objects", "list", "--bucket-name", BUCKET, "--prefix", key, "--per-page", "1"],
+        check=True,
+        capture_output=True,
+        text=True,
+        env=CF_ENV,
+    )
+    return any(item["key"] == key for item in json.loads(result.stdout))
 
 
 def put(key: str, path: Path, content_type: str) -> None:
     subprocess.run(
         ["cf", "r2", "objects", "put", key, "--bucket-name", BUCKET, "--file", str(path), "--content-type", content_type],
         check=True,
-        env={**os.environ, "CLOUDFLARE_ACCOUNT_ID": CLOUDFLARE_ACCOUNT_ID},
+        env=CF_ENV,
     )
 
 
@@ -68,10 +81,12 @@ def main() -> None:
     print(f"{len(files)} files, {total / 1e6:.0f} MB -> {out_dir}")
 
     if args.upload:
+        if published(f"abr/{name}/manifest.json"):
+            raise SystemExit(f"abr/{name} is already published; refresh under another date")
         for key in keys:
             put(f"abr/{name}/{key}", out_dir / key, "application/zip")
         put(f"abr/{name}/manifest.json", manifest_path, "application/json")
-        print(f"uploaded. set ABR_MIRROR_DATE = \"{name.removeprefix('address-br-')}\" in main.py")
+        print(f"uploaded. set ABR_MIRROR_DATE = \"{args.date:%Y%m%d}\" in main.py")
 
 
 if __name__ == "__main__":

@@ -110,7 +110,10 @@ def _load_mirror_manifest() -> dict[str, dict]:
         if body is None:
             logger.warning("  mirror manifest not found; downloading from the origin")
             return {}
-        return json.loads(body)["files"]
+        files = json.loads(body)["files"]
+        if not isinstance(files, dict):
+            raise TypeError(f"files is {type(files).__name__}, not an object")
+        return files
     except Exception as error:
         logger.warning(f"  mirror manifest unavailable: {error}")
         return {}
@@ -129,7 +132,10 @@ def _download_pref_all() -> None:
 
 
 def _download_zip(key: str, zip_path: Path, manifest: dict[str, dict]) -> None:
-    """写しから取り、目録の sha256 と合えば使う。目録に無い・取れない・合わないときは配信元から取る。"""
+    """写しから取り、目録の sha256 と合えば使う。目録に無い・取れない・合わないときは配信元から取る。
+
+    写しが再試行のあとも取れなければ、残りもすべて配信元から取る（1 件ごとに再試行を待たない）。
+    """
     entry = manifest.get(key)
     if entry:
         try:
@@ -138,7 +144,8 @@ def _download_zip(key: str, zip_path: Path, manifest: dict[str, dict]) -> None:
                 return
             logger.warning(f"  mirror checksum mismatch: {key}")
         except Exception as error:
-            logger.warning(f"  mirror download failed: {key} ({error})")
+            logger.warning(f"  mirror download failed: {key} ({error}); downloading the rest from the origin")
+            manifest.clear()
     download(f"{ABR_BASE_URL}/{key}", zip_path, user_agent=USER_AGENT)
 
 
