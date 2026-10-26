@@ -107,21 +107,18 @@ def _load_mirror_manifest() -> dict[str, dict]:
     """写しの目録（キーごとの bytes と sha256）。取れなければ空で、すべて配信元から取る。"""
     try:
         body = fetch(f"{ABR_MIRROR_URL}/manifest.json", user_agent=USER_AGENT, not_found_ok=True)
+        if body is None:
+            logger.warning("  mirror manifest not found; downloading from the origin")
+            return {}
+        return json.loads(body)["files"]
     except Exception as error:
         logger.warning(f"  mirror manifest unavailable: {error}")
         return {}
-    if body is None:
-        logger.warning("  mirror manifest not found; downloading from the origin")
-        return {}
-    return json.loads(body)["files"]
 
 
 def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
     with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+        return hashlib.file_digest(f, "sha256").hexdigest()
 
 
 def _download_pref_all() -> None:

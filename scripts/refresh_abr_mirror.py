@@ -9,6 +9,7 @@ ABR の配信元は国外からの取得を 403 で拒むので、CI（米国の
 使い方:
   uv run python scripts/refresh_abr_mirror.py            # 取って目録を作るまで
   uv run python scripts/refresh_abr_mirror.py --upload   # R2 に置くまで
+  uv run python scripts/refresh_abr_mirror.py --upload --date 2026-10-26   # 前の日に取った分を置く
 置いたあと、main.py の ABR_MIRROR_DATE を表示された日付に書き換えて PR にする。
 """
 
@@ -20,7 +21,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 
 from main import ABR_BASE_URL, PREF_CODES, PREF_DATASETS, USER_AGENT, _sha256, pref_zip_key  # noqa: E402
 from shared.fetch import download  # noqa: E402
@@ -41,10 +43,12 @@ def put(key: str, path: Path, content_type: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--upload", action="store_true", help="R2 に置く")
-    parser.add_argument("--out", type=Path, default=Path("data/abr-mirror"))
+    parser.add_argument("--out", type=Path, default=ROOT / "data/abr-mirror")
+    # 取った日と置く日が違うとき、取った日の作業場所を使い直す（既定は今日）
+    parser.add_argument("--date", type=date.fromisoformat, default=date.today(), help="写しの日付 (YYYY-MM-DD)")
     args = parser.parse_args()
 
-    name = f"address-br-{date.today():%Y%m%d}"
+    name = f"address-br-{args.date:%Y%m%d}"
     out_dir = args.out / name
     keys = [pref_zip_key(dataset, pref) for dataset in PREF_DATASETS for pref in PREF_CODES]
 
@@ -58,7 +62,7 @@ def main() -> None:
         files[key] = {"bytes": path.stat().st_size, "sha256": _sha256(path)}
 
     manifest_path = out_dir / "manifest.json"
-    manifest = {"source": ABR_BASE_URL, "created": f"{date.today():%Y-%m-%d}", "files": files}
+    manifest = {"source": ABR_BASE_URL, "created": f"{args.date:%Y-%m-%d}", "files": files}
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     total = sum(f["bytes"] for f in files.values())
     print(f"{len(files)} files, {total / 1e6:.0f} MB -> {out_dir}")
