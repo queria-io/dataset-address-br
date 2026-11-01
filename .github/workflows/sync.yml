@@ -18,6 +18,6 @@ jobs:
     uses: queria-io/dataset-shared/.github/workflows/sync.yml@main
     with:
       dataset_name: address_br
-      # 地番マスタは市区町村ごとに約 3,800 個の zip を取り、約 2 億行を並べ替える。既定の 90 分では足りない見込み
+      # 地番マスタは市区町村ごとに約 3,800 個の zip を取り、約 2 億行を書く。既定の 90 分では足りない見込み
       timeout_minutes: 240
     secrets: inherit
