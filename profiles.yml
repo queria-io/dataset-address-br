@@ -7,13 +7,12 @@ address_br:
       database: address_br
       schema: main
       threads: 1
-      # mart_parcel は約 2 億行を結合して並べ替える。path が :memory: のままだと DuckDB は
-      # メモリに入らない分をディスクに逃がせず、Actions のランナー (16GB) で Out of Memory になる。
-      # 逃がす先を決め、上限をほかの処理の分だけ下げる。並べる順は各モデルの ORDER BY が決めるので
-      # preserve_insertion_order は切ってよい (切ると並べ替えと結合のメモリが減る)
+      # path が :memory: のままだと DuckDB はメモリに入らない分をディスクに逃がせず、Actions のランナー (16GB)
+      # で Out of Memory になる。逃がす先 (下の temp_directory) を決め、上限をほかの処理の分だけ下げる。
+      # preserve_insertion_order は既定 (読んだ順に書く) のまま。mart_parcel は並べ替えずに、市区町村ごとの
+      # ファイルを読んだ順のまま書いてキーの順にしている
       settings:
         memory_limit: "10GB"
-        preserve_insertion_order: false
       # ビルドが公開ストレージを読むときの名乗り。build-fdl.sh が
       # queria-build として渡す。無いと data.queria.io の利用統計に
       # 自分のビルドが利用者として混ざる。

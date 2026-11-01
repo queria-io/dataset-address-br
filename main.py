@@ -68,12 +68,17 @@ CITY_DATASETS = {
     "mt_parcel_pos": ["lg_code", "machiaza_id", "prc_id", "rep_lon", "rep_lat"],
 }
 
+# 地番に代表点を付けた表を、市区町村ごとに置く。全国の約 2 億行を 1 回で結合するとランナーのメモリに
+# 収まらないので、1 市区町村ずつ結合して並べ、mart_parcel はファイル名（lg_code）の順に読むだけにする
+PARCEL_DIR = ABR_DIR / "parcel"
+
 
 def main():
     _extract_all()
     manifest, missing = _load_mirror_manifest()
     _download_pref_all(manifest)
     _download_city_all(manifest, missing)
+    _join_parcels_all()
 
     dbt = dbtRunner()
 
@@ -230,6 +235,56 @@ def _download_city(dataset: str, lg_code: str, manifest: dict[str, dict], missin
     zip_path.unlink()
     _csv_to_parquet(csv_path, parquet_path, CITY_DATASETS[dataset])
     csv_path.unlink()
+
+
+def _join_parcels_all() -> None:
+    """地番マスタのある市区町村ごとに、代表点を付けた Parquet を data/abr/parcel/ に書く。既にあれば飛ばす。"""
+    PARCEL_DIR.mkdir(parents=True, exist_ok=True)
+    with duckdb.connect() as con:
+        for parcel_path in sorted((ABR_DIR / "mt_parcel").glob("mt_parcel_city*.parquet")):
+            lg_code = parcel_path.stem.removeprefix("mt_parcel_city")
+            out_path = PARCEL_DIR / f"parcel_city{lg_code}.parquet"
+            if not out_path.exists():
+                pos_path = ABR_DIR / "mt_parcel_pos" / f"mt_parcel_pos_city{lg_code}.parquet"
+                _join_parcels(con, parcel_path, pos_path, out_path)
+
+
+def _join_parcels(con: duckdb.DuckDBPyConnection, parcel_path: Path, pos_path: Path, out_path: Path) -> None:
+    """市区町村 1 つ分の地番に代表点を付け、町字・地番の順に並べて書く。
+
+    同じ筆が同じ座標で 2 行入っていることがある（日野市で 18,385 行が 9,382 筆）ので、代表点は筆ごとに平均する。
+    位置参照拡張が配信されない市区町村は、代表点を NULL にする
+    """
+    if pos_path.exists():
+        pos = """
+            SELECT lg_code, machiaza_id, prc_id, avg(lon) AS rep_lon, avg(lat) AS rep_lat
+            FROM (
+                SELECT lg_code, machiaza_id, prc_id,
+                    try_cast(rep_lon AS DOUBLE) AS lon, try_cast(rep_lat AS DOUBLE) AS lat
+                FROM read_parquet($pos)
+            )
+            WHERE lon IS NOT NULL AND lat IS NOT NULL
+            GROUP BY lg_code, machiaza_id, prc_id
+        """
+        join = f"LEFT JOIN ({pos}) pos USING (lg_code, machiaza_id, prc_id)"
+        coords = "pos.rep_lon, pos.rep_lat"
+        params = {"pos": str(pos_path)}
+    else:
+        join, coords, params = "", "NULL::DOUBLE AS rep_lon, NULL::DOUBLE AS rep_lat", {}
+    with replacing(out_path) as partial:
+        con.execute(
+            f"""
+            COPY (
+                SELECT p.lg_code, p.machiaza_id, p.prc_id, p.prc_num1, p.prc_num2, p.prc_num3,
+                    p.rsdt_addr_flg, {coords}
+                FROM read_parquet($parcel) p
+                {join}
+                WHERE p.lg_code IS NOT NULL
+                ORDER BY p.lg_code, p.machiaza_id, p.prc_id
+            ) TO $dst (FORMAT parquet, COMPRESSION zstd)
+            """,
+            {**params, "parcel": str(parcel_path), "dst": str(partial)},
+        )
 
 
 def _csv_to_parquet(csv_path: Path, parquet_path: Path, columns: list[str]) -> None:
