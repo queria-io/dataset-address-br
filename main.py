@@ -71,8 +71,9 @@ CITY_DATASETS = {
 
 def main():
     _extract_all()
-    _download_pref_all()
-    _download_city_all()
+    manifest, missing = _load_mirror_manifest()
+    _download_pref_all(manifest)
+    _download_city_all(manifest, missing)
 
     dbt = dbtRunner()
 
@@ -151,15 +152,13 @@ def _sha256(path: Path) -> str:
         return hashlib.file_digest(f, "sha256").hexdigest()
 
 
-def _download_pref_all() -> None:
-    manifest, _ = _load_mirror_manifest()
+def _download_pref_all(manifest: dict[str, dict]) -> None:
     for dataset in PREF_DATASETS:
         for pref_code in PREF_CODES:
             _download_pref(dataset, pref_code, manifest)
 
 
-def _download_city_all() -> None:
-    manifest, missing = _load_mirror_manifest()
+def _download_city_all(manifest: dict[str, dict], missing: set[str]) -> None:
     codes = city_codes()
     for dataset in CITY_DATASETS:
         for lg_code in codes:
@@ -239,9 +238,9 @@ def _csv_to_parquet(csv_path: Path, parquet_path: Path, columns: list[str]) -> N
     select = ", ".join(f'"{c}"' for c in columns)
     with replacing(parquet_path) as partial, duckdb.connect() as con:
         con.execute(
-            f"COPY (SELECT {select} FROM read_csv(?, header = true, all_varchar = true)) "
-            f"TO '{partial}' (FORMAT parquet, COMPRESSION zstd)",
-            [str(csv_path)],
+            f"COPY (SELECT {select} FROM read_csv($src, header = true, all_varchar = true)) "
+            "TO $dst (FORMAT parquet, COMPRESSION zstd)",
+            {"src": str(csv_path), "dst": str(partial)},
         )
 
 
