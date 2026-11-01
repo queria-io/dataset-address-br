@@ -58,6 +58,9 @@ fields:
   - name: rsdt_addr_flg
     title: 住居表示フラグ
     description: 1 は住居表示を実施している町字（街区・住居は mart_rsdtdsp_blk / mart_rsdtdsp_rsdt にある）、0 は地番で表す町字
+  - name: wake_num_flg
+    title: 起番フラグ
+    description: 町字が地番区域かどうか。1 は起番（この町字で地番が振られている）、2 は非起番（この町字には地番が無い）、0 は登記情報に存在しない。小字が 1 なら地番はその小字の中でだけ一意で、小字を省いた地番の住所を大字で探すと別の小字の地番に当たりうる
   - name: koaza_aka_code
     title: 小字の種類のコード
     description: 2 は京都の通り名（このとき koaza に「寺町通御池上る」のような通り名が入る）
