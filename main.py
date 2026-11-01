@@ -33,7 +33,7 @@ ABR_DIR = DATA_DIR / "abr"
 
 ABR_BASE_URL = "https://data.address-br.digital.go.jp"
 # 写しは日付ごとに別の場所に置き、同じ名前で上書きしない（CDN が古い中身を返し続けるため）
-ABR_MIRROR_DATE = "20261026"
+ABR_MIRROR_DATE = "20261101"
 ABR_MIRROR_URL = f"https://assets.queria.io/abr/address-br-{ABR_MIRROR_DATE}"
 USER_AGENT = "dataset-address-br (+https://github.com/queria-io/dataset-address-br)"
 
