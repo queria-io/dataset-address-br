@@ -1,7 +1,8 @@
 """アドレス・ベース・レジストリ マスタデータパイプライン。
 
 1. data/ の zip ファイルを展開
-2. 位置参照・住居表示のマスタを都道府県ごとに、地番のマスタを市区町村ごとにダウンロードして展開
+2. 位置参照・住居表示のマスタを都道府県ごとにダウンロードして展開し、地番のマスタを市区町村ごとに
+   ダウンロードして使う列だけの Parquet にする
 3. dbt ビルド
 
 データ更新手順:
@@ -22,6 +23,7 @@ import zipfile
 from pathlib import Path
 from urllib.error import HTTPError
 
+import duckdb
 from dbt.cli.main import dbtRunner
 
 from shared.fetch import download, fetch, replacing
@@ -57,12 +59,14 @@ PREF_DATASETS = [
 
 PREF_CODES = [f"{code:02d}" for code in range(1, 48)]
 
-# 市区町村ごとに配信されるマスタ。data/abr/<名前>/<名前>_city<lg_code>.csv に展開する。
-# 配信元に無い市区町村がある（政令市の市そのもの、地番の無い村、座標の付く筆が 1 つも無い市区町村）
-CITY_DATASETS = [
-    "mt_parcel",
-    "mt_parcel_pos",
-]
+# 市区町村ごとに配信されるマスタ。data/abr/<名前>/<名前>_city<lg_code>.parquet に、使う列だけ書く。
+# 配信元に無い市区町村がある（政令市の市そのもの、地番の無い村、座標の付く筆が 1 つも無い市区町村）。
+# 全国の CSV を展開すると約 32GB になり、Actions のランナーのディスクに収まらない。
+# 市区町村ごとに展開してすぐ Parquet にし、CSV は消す
+CITY_DATASETS = {
+    "mt_parcel": ["lg_code", "machiaza_id", "prc_id", "prc_num1", "prc_num2", "prc_num3", "rsdt_addr_flg"],
+    "mt_parcel_pos": ["lg_code", "machiaza_id", "prc_id", "rep_lon", "rep_lat"],
+}
 
 
 def main():
@@ -203,12 +207,13 @@ def _download_pref(dataset: str, pref_code: str, manifest: dict[str, dict]) -> N
 
 
 def _download_city(dataset: str, lg_code: str, manifest: dict[str, dict], missing: set[str]) -> None:
-    """市区町村 1 つ分の zip を取って CSV を展開する。配信元に無い市区町村は飛ばす。"""
+    """市区町村 1 つ分の zip を取り、使う列だけの Parquet にする。配信元に無い市区町村は飛ばす。"""
     key = city_zip_key(dataset, lg_code)
     filename = f"{dataset}_city{lg_code}.csv"
     out_dir = ABR_DIR / dataset
     csv_path = out_dir / filename
-    if csv_path.exists() or key in missing:
+    parquet_path = out_dir / f"{dataset}_city{lg_code}.parquet"
+    if parquet_path.exists() or key in missing:
         return
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -221,10 +226,23 @@ def _download_city(dataset: str, lg_code: str, manifest: dict[str, dict], missin
         logger.info(f"  not published: {key}")
         return
 
-    with zipfile.ZipFile(zip_path) as zf, zf.open(filename) as src, replacing(csv_path) as partial:
-        with partial.open("wb") as dst:
-            shutil.copyfileobj(src, dst)
+    with zipfile.ZipFile(zip_path) as zf, zf.open(filename) as src, csv_path.open("wb") as dst:
+        shutil.copyfileobj(src, dst)
     zip_path.unlink()
+    _csv_to_parquet(csv_path, parquet_path, CITY_DATASETS[dataset])
+    csv_path.unlink()
+
+
+def _csv_to_parquet(csv_path: Path, parquet_path: Path, columns: list[str]) -> None:
+    """CSV の columns の列だけを、文字列のまま Parquet に書く。型は raw のモデルで付ける。
+    書きかけの Parquet を取得済みとして残さない"""
+    select = ", ".join(f'"{c}"' for c in columns)
+    with replacing(parquet_path) as partial, duckdb.connect() as con:
+        con.execute(
+            f"COPY (SELECT {select} FROM read_csv(?, header = true, all_varchar = true)) "
+            f"TO '{partial}' (FORMAT parquet, COMPRESSION zstd)",
+            [str(csv_path)],
+        )
 
 
 if __name__ == "__main__":
