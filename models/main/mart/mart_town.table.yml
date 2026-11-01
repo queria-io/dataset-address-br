@@ -65,6 +65,9 @@ fields:
   - name: machiaza_dist
     title: 同じ名前の町字の区別
     description: 同じ市区町村に同じ名前の町字があるときに、どれかを見分けるための文字列（住所の表記には含まれない）
+  - name: status_flg
+    title: 状態フラグ
+    description: 0 は自治体の確認待ち、1 は自治体が確認したもの、2 は確認の要らないもの、3 は存在しない町字
   - name: oaza_cho_uncmn_reg
     title: 大字・町外字 正規化
   - name: oaza_cho_uncmn_mj
