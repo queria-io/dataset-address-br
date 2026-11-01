@@ -20,6 +20,7 @@ SELECT
     efct_date,
     rsdt_addr_flg,
     koaza_aka_code,
-    machiaza_dist
+    machiaza_dist,
+    status_flg
 FROM {{ ref('raw_mt_town') }}
 WHERE lg_code IS NOT NULL
