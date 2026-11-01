@@ -47,6 +47,10 @@ models:
         data_type: date
       - name: rsdt_addr_flg
         data_type: varchar
+      - name: koaza_aka_code
+        data_type: varchar
+      - name: machiaza_dist
+        data_type: varchar
       - name: oaza_cho_uncmn_reg
         data_type: varchar
       - name: oaza_cho_uncmn_mj
