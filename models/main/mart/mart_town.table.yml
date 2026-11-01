@@ -59,6 +59,12 @@ fields:
   - name: rsdt_addr_flg
     title: 住居表示フラグ
     description: 1 は住居表示を実施している町字（街区・住居は mart_rsdtdsp_blk / mart_rsdtdsp_rsdt にある）、0 は地番で表す町字
+  - name: koaza_aka_code
+    title: 小字の種類のコード
+    description: 2 は京都の通り名（このとき koaza に「寺町通御池上る」のような通り名が入る）
+  - name: machiaza_dist
+    title: 同じ名前の町字の区別
+    description: 同じ市区町村に同じ名前の町字があるときに、どれかを見分けるための文字列（住所の表記には含まれない）
   - name: oaza_cho_uncmn_reg
     title: 大字・町外字 正規化
   - name: oaza_cho_uncmn_mj
