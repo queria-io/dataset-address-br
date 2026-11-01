@@ -7,6 +7,14 @@ address_br:
       database: address_br
       schema: main
       threads: 1
+      # mart_parcel は約 2 億行を結合して並べ替える。path が :memory: のままだと DuckDB は
+      # メモリに入らない分をディスクに逃がせず、Actions のランナー (16GB) で Out of Memory になる。
+      # 逃がす先を決め、上限をほかの処理の分だけ下げる。並べる順は各モデルの ORDER BY が決めるので
+      # preserve_insertion_order は切ってよい (切ると並べ替えと結合のメモリが減る)
+      settings:
+        temp_directory: "{{ env_var('RUNNER_TEMP', '/tmp') }}/duckdb_tmp"
+        memory_limit: "10GB"
+        preserve_insertion_order: false
       # ビルドが公開ストレージを読むときの名乗り。queria run が
       # queria-build として渡す。無いと data.queria.io の利用統計に
       # 自分のビルドが利用者として混ざる。
