@@ -12,7 +12,6 @@ address_br:
       # 逃がす先を決め、上限をほかの処理の分だけ下げる。並べる順は各モデルの ORDER BY が決めるので
       # preserve_insertion_order は切ってよい (切ると並べ替えと結合のメモリが減る)
       settings:
-        temp_directory: "{{ env_var('RUNNER_TEMP', '/tmp') }}/duckdb_tmp"
         memory_limit: "10GB"
         preserve_insertion_order: false
       # ビルドが公開ストレージを読むときの名乗り。queria run が
@@ -22,6 +21,9 @@ address_br:
       # ときにしか決められず、SET では変えられない
       config_options:
         custom_user_agent: "{{ env_var('QUERIA_USER_AGENT', '') }}"
+        # 逃がす先は使い始めたあとに変えられない。settings に置くと dbt-duckdb がモデルごとに
+        # SET し直して "Cannot switch temporary directory" で止まるので、接続を開くときに 1 回だけ決める
+        temp_directory: "{{ env_var('RUNNER_TEMP', '/tmp') }}/duckdb_tmp"
       extensions:
         - httpfs
         - ducklake
