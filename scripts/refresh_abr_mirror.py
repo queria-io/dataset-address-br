@@ -1,8 +1,8 @@
-"""位置参照・住居表示のマスタの写しを作り、assets.queria.io に置く。日本から流す。
+"""位置参照・住居表示・地番のマスタの写しを作り、assets.queria.io に置く。日本から流す。
 
 ABR の配信元は国外からの取得を 403 で拒むので、CI（米国のランナー）は main.py が
-この写しから取る。配信元の zip（5 種 × 47 都道府県）をそのまま取り、sha256 を書いた
-目録と一緒に R2 のバケット queria-assets の abr/address-br-<YYYYMMDD>/ に置く。
+この写しから取る。配信元の zip（5 種 × 47 都道府県と、地番の 2 種 × 市区町村）をそのまま取り、
+sha256 を書いた目録と一緒に R2 のバケット queria-assets の abr/address-br-<YYYYMMDD>/ に置く。
 同じキーには上書きしない（CDN が古い中身を返し続けるため）。目録を最後に置くので、
 途中で止まった版は目録が無く、CI は使わずに配信元へ取りに行く。
 
@@ -20,11 +20,23 @@ import subprocess
 import sys
 from datetime import date
 from pathlib import Path
+from urllib.error import HTTPError
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from main import ABR_BASE_URL, PREF_CODES, PREF_DATASETS, USER_AGENT, _sha256, pref_zip_key  # noqa: E402
+from main import (  # noqa: E402
+    ABR_BASE_URL,
+    CITY_DATASETS,
+    PREF_CODES,
+    PREF_DATASETS,
+    USER_AGENT,
+    _extract,
+    _sha256,
+    city_codes,
+    city_zip_key,
+    pref_zip_key,
+)
 from shared.fetch import download  # noqa: E402
 
 BUCKET = "queria-assets"
@@ -62,28 +74,44 @@ def main() -> None:
     args = parser.parse_args()
 
     name = f"address-br-{args.date:%Y%m%d}"
-    out_dir = args.out / name
+    out_dir = args.out.resolve() / name
+    os.chdir(ROOT)
+    _extract("mt_city_all")
     keys = [pref_zip_key(dataset, pref) for dataset in PREF_DATASETS for pref in PREF_CODES]
+    keys += [city_zip_key(dataset, code) for dataset in CITY_DATASETS for code in city_codes()]
 
     files = {}
+    missing = []
     for key in keys:
         path = out_dir / key
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
             print(f"downloading {key}")
-            download(f"{ABR_BASE_URL}/{key}", path, user_agent=USER_AGENT)
+            try:
+                download(f"{ABR_BASE_URL}/{key}", path, user_agent=USER_AGENT)
+            except HTTPError as error:
+                # 市区町村ごとのマスタは、配信元に無い市区町村がある。目録に書いて CI が取りに行かないようにする
+                if error.code != 404 or "/city/" not in key:
+                    raise
+                missing.append(key)
+                continue
         files[key] = {"bytes": path.stat().st_size, "sha256": _sha256(path)}
 
     manifest_path = out_dir / "manifest.json"
-    manifest = {"source": ABR_BASE_URL, "created": f"{args.date:%Y-%m-%d}", "files": files}
+    manifest = {
+        "source": ABR_BASE_URL,
+        "created": f"{args.date:%Y-%m-%d}",
+        "files": files,
+        "missing": missing,
+    }
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     total = sum(f["bytes"] for f in files.values())
-    print(f"{len(files)} files, {total / 1e6:.0f} MB -> {out_dir}")
+    print(f"{len(files)} files, {len(missing)} missing, {total / 1e6:.0f} MB -> {out_dir}")
 
     if args.upload:
         if published(f"abr/{name}/manifest.json"):
             raise SystemExit(f"abr/{name} is already published; refresh under another date")
-        for key in keys:
+        for key in files:
             put(f"abr/{name}/{key}", out_dir / key, "application/zip")
         put(f"abr/{name}/manifest.json", manifest_path, "application/json")
         print(f"uploaded. set ABR_MIRROR_DATE = \"{args.date:%Y%m%d}\" in main.py")

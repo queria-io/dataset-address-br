@@ -33,3 +33,9 @@ models:
 
   - name: raw_mt_rsdtdsp_rsdt_pos
     description: 住居表示-住居マスタ位置参照拡張
+
+  - name: raw_mt_parcel
+    description: 地番マスタ
+
+  - name: raw_mt_parcel_pos
+    description: 地番マスタ位置参照拡張

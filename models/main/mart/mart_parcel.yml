@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: mart_parcel
+    description: |
+      地番（「○番地」「○番○」）の一覧と、座標の付く筆の代表点。全国の市区町村ごとの地番マスタをまとめたもの。
+      「アドレス・ベース・レジストリ（地番マスタデータ・位置参照拡張）」（デジタル庁）（https://dataset.address-br.digital.go.jp/）を加工して作成。
+    access: public
+    columns:
+      - name: lg_code
+        data_type: varchar
+      - name: machiaza_id
+        data_type: varchar
+      - name: prc_id
+        data_type: varchar
+      - name: prc_num1
+        data_type: varchar
+      - name: prc_num2
+        data_type: varchar
+      - name: prc_num3
+        data_type: varchar
+      - name: rsdt_addr_flg
+        data_type: varchar
+      - name: geometry
+        data_type: geometry

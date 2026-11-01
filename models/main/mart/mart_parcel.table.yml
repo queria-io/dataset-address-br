@@ -1,0 +1,38 @@
+schema: main
+name: mart_parcel
+title: 地番マスタ
+description: '地番（「○番地」「○番○」）の一覧と、座標の付く筆の代表点。全国の市区町村ごとの地番マスタをまとめたもの。座標の付く筆は一部（日野市で 10%、千代田区で 1%）。
+
+  「アドレス・ベース・レジストリ（地番マスタデータ・位置参照拡張）」（デジタル庁）（https://dataset.address-br.digital.go.jp/）を加工して作成。'
+keywords:
+  - 住所
+  - 地番
+  - 位置参照
+published: true
+sources:
+  - path: https://dataset.address-br.digital.go.jp/
+fields:
+  - name: lg_code
+    title: 全国地方公共団体コード
+    description: 6桁（検査数字あり）
+    semantic: { role: entity, name: city }
+  - name: machiaza_id
+    title: 町字ID
+    description: mart_town と lg_code・machiaza_id で結合する
+  - name: prc_id
+    title: 地番ID
+  - name: prc_num1
+    title: 地番1
+    description: 地番の本番。イロハなどの頭の文字を含むことがある（元データのまま、半角カナもそのまま）
+  - name: prc_num2
+    title: 地番2
+    description: 枝番。無ければ NULL
+  - name: prc_num3
+    title: 地番3
+    description: 枝番の枝番。無ければ NULL
+  - name: rsdt_addr_flg
+    title: 住居表示フラグ
+    description: 1 は住居表示を実施している町字の地番
+  - name: geometry
+    title: 代表点
+    description: 位置参照拡張の代表点座標（経緯度）。元データの測地系は JGD2011 (EPSG:6668)、変換していない。同じ筆に代表点が複数あるときは平均。座標の無い筆は NULL
