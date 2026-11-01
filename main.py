@@ -1,7 +1,7 @@
 """アドレス・ベース・レジストリ マスタデータパイプライン。
 
 1. data/ の zip ファイルを展開
-2. 位置参照・住居表示のマスタを都道府県ごとにダウンロードして展開
+2. 位置参照・住居表示のマスタを都道府県ごとに、地番のマスタを市区町村ごとにダウンロードして展開
 3. dbt ビルド
 
 データ更新手順:
@@ -13,12 +13,14 @@
   写しの作り直しは scripts/refresh_abr_mirror.py を日本から流し、ABR_MIRROR_DATE を書き換える。
 """
 
+import csv
 import hashlib
 import json
 import logging
 import shutil
 import zipfile
 from pathlib import Path
+from urllib.error import HTTPError
 
 from dbt.cli.main import dbtRunner
 
@@ -55,10 +57,18 @@ PREF_DATASETS = [
 
 PREF_CODES = [f"{code:02d}" for code in range(1, 48)]
 
+# 市区町村ごとに配信されるマスタ。data/abr/<名前>/<名前>_city<lg_code>.csv に展開する。
+# 配信元に無い市区町村がある（政令市の市そのもの、地番の無い村、座標の付く筆が 1 つも無い市区町村）
+CITY_DATASETS = [
+    "mt_parcel",
+    "mt_parcel_pos",
+]
+
 
 def main():
     _extract_all()
     _download_pref_all()
+    _download_city_all()
 
     dbt = dbtRunner()
 
@@ -103,20 +113,33 @@ def pref_zip_key(dataset: str, pref_code: str) -> str:
     return f"{dataset}/pref/{dataset}_pref{pref_code}.csv.zip"
 
 
-def _load_mirror_manifest() -> dict[str, dict]:
-    """写しの目録（キーごとの bytes と sha256）。取れなければ空で、すべて配信元から取る。"""
+def city_zip_key(dataset: str, lg_code: str) -> str:
+    """配信元と写しで共通の、市区町村ごとの zip の置き場所。"""
+    return f"{dataset}/city/{dataset}_city{lg_code}.csv.zip"
+
+
+def city_codes() -> list[str]:
+    """市区町村マスタ（data/mt_city_all.csv）の lg_code。"""
+    with (DATA_DIR / "mt_city_all.csv").open(encoding="utf-8") as f:
+        return sorted({row["lg_code"] for row in csv.DictReader(f)})
+
+
+def _load_mirror_manifest() -> tuple[dict[str, dict], set[str]]:
+    """写しの目録（キーごとの bytes と sha256）と、配信元に無いと確かめたキー。
+    取れなければ空で、すべて配信元から取る。"""
     try:
         body = fetch(f"{ABR_MIRROR_URL}/manifest.json", user_agent=USER_AGENT, not_found_ok=True)
         if body is None:
             logger.warning("  mirror manifest not found; downloading from the origin")
-            return {}
-        files = json.loads(body)["files"]
+            return {}, set()
+        manifest = json.loads(body)
+        files = manifest["files"]
         if not isinstance(files, dict):
             raise TypeError(f"files is {type(files).__name__}, not an object")
-        return files
+        return files, set(manifest.get("missing", []))
     except Exception as error:
         logger.warning(f"  mirror manifest unavailable: {error}")
-        return {}
+        return {}, set()
 
 
 def _sha256(path: Path) -> str:
@@ -125,10 +148,18 @@ def _sha256(path: Path) -> str:
 
 
 def _download_pref_all() -> None:
-    manifest = _load_mirror_manifest()
+    manifest, _ = _load_mirror_manifest()
     for dataset in PREF_DATASETS:
         for pref_code in PREF_CODES:
             _download_pref(dataset, pref_code, manifest)
+
+
+def _download_city_all() -> None:
+    manifest, missing = _load_mirror_manifest()
+    codes = city_codes()
+    for dataset in CITY_DATASETS:
+        for lg_code in codes:
+            _download_city(dataset, lg_code, manifest, missing)
 
 
 def _download_zip(key: str, zip_path: Path, manifest: dict[str, dict]) -> None:
@@ -165,6 +196,31 @@ def _download_pref(dataset: str, pref_code: str, manifest: dict[str, dict]) -> N
     _download_zip(pref_zip_key(dataset, pref_code), zip_path, manifest)
 
     # 展開が途中で切れても、書きかけの CSV を取得済みとして残さない
+    with zipfile.ZipFile(zip_path) as zf, zf.open(filename) as src, replacing(csv_path) as partial:
+        with partial.open("wb") as dst:
+            shutil.copyfileobj(src, dst)
+    zip_path.unlink()
+
+
+def _download_city(dataset: str, lg_code: str, manifest: dict[str, dict], missing: set[str]) -> None:
+    """市区町村 1 つ分の zip を取って CSV を展開する。配信元に無い市区町村は飛ばす。"""
+    key = city_zip_key(dataset, lg_code)
+    filename = f"{dataset}_city{lg_code}.csv"
+    out_dir = ABR_DIR / dataset
+    csv_path = out_dir / filename
+    if csv_path.exists() or key in missing:
+        return
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    zip_path = out_dir / f"{filename}.zip"
+    try:
+        _download_zip(key, zip_path, manifest)
+    except HTTPError as error:
+        if error.code != 404:
+            raise
+        logger.info(f"  not published: {key}")
+        return
+
     with zipfile.ZipFile(zip_path) as zf, zf.open(filename) as src, replacing(csv_path) as partial:
         with partial.open("wb") as dst:
             shutil.copyfileobj(src, dst)
