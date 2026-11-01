@@ -19,6 +19,7 @@ SELECT
     post_code,
     efct_date,
     rsdt_addr_flg,
+    wake_num_flg,
     koaza_aka_code,
     machiaza_dist,
     status_flg
