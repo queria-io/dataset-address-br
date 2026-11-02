@@ -47,6 +47,8 @@ models:
         data_type: date
       - name: rsdt_addr_flg
         data_type: varchar
+      - name: wake_num_flg
+        data_type: varchar
       - name: koaza_aka_code
         data_type: varchar
       - name: machiaza_dist

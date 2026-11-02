@@ -1,6 +1,5 @@
 schema: main
 name: raw_mt_town
 description: 町字マスタ
-published: false
 sources:
   - path: https://dataset.address-br.digital.go.jp/documents/b80e77a0e2d24e5692be4af885eb3de7/about

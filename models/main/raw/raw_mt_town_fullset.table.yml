@@ -1,6 +1,5 @@
 schema: main
 name: raw_mt_town_fullset
 description: 町字マスタ（フルセット）
-published: false
 sources:
   - path: https://dataset.address-br.digital.go.jp/documents/061100c569ac4ba49cd4a6cda21b5a8d/about

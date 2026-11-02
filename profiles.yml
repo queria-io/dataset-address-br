@@ -7,14 +7,13 @@ address_br:
       database: address_br
       schema: main
       threads: 1
-      # mart_parcel は約 2 億行を結合して並べ替える。path が :memory: のままだと DuckDB は
-      # メモリに入らない分をディスクに逃がせず、Actions のランナー (16GB) で Out of Memory になる。
-      # 逃がす先を決め、上限をほかの処理の分だけ下げる。並べる順は各モデルの ORDER BY が決めるので
-      # preserve_insertion_order は切ってよい (切ると並べ替えと結合のメモリが減る)
+      # path が :memory: のままだと DuckDB はメモリに入らない分をディスクに逃がせず、Actions のランナー (16GB)
+      # で Out of Memory になる。逃がす先 (下の temp_directory) を決め、上限をほかの処理の分だけ下げる。
+      # preserve_insertion_order は既定 (読んだ順に書く) のまま。mart_parcel は並べ替えずに、市区町村ごとの
+      # ファイルを読んだ順のまま書いてキーの順にしている
       settings:
         memory_limit: "10GB"
-        preserve_insertion_order: false
-      # ビルドが公開ストレージを読むときの名乗り。queria run が
+      # ビルドが公開ストレージを読むときの名乗り。build-fdl.sh が
       # queria-build として渡す。無いと data.queria.io の利用統計に
       # 自分のビルドが利用者として混ざる。
       # settings: ではなく config_options: — custom_user_agent は接続を開く
@@ -27,29 +26,19 @@ address_br:
       extensions:
         - httpfs
         - ducklake
-        # credential_chain はこの拡張にある
-        - aws
+        - sqlite
         - spatial
-      # 認証情報を値として持たず、期限が切れたら取り直させる。一時認証情報は
-      # 15 分で切れるのに対しビルドはそれより長く走るので、値を渡す形にすると
-      # 途中で書けなくなる。process が実行するのは queria で、鍵はどこにも置かない
-      secrets:
-        - type: s3
-          provider: credential_chain
-          chain: process
-          refresh: auto
-          endpoint: "{{ env_var('QUERIA_S3_ENDPOINT_HOST', '') }}"
-          url_style: path
-          region: "{{ env_var('QUERIA_S3_REGION', 'auto') }}"
-          use_ssl: "{{ env_var('QUERIA_S3_USE_SSL', 'true') }}"
       attach:
-        - path: "ducklake:{{ env_var('QUERIA_CATALOG_PATH', '') }}"
+        # fdl checkout が作った作業場のカタログ (SQLite) に書く。新しいデータファイルは
+        # FDL_DATA_PATH (data.queria.io から取り出したときは手元のフォルダ) に書き、
+        # fdl commit が上げる (shared/scripts/build-fdl.sh)
+        - path: "ducklake:{{ env_var('FDL_WORKING') }}"
           alias: address_br
           is_ducklake: true
           options:
-            DATA_PATH: "{{ env_var('QUERIA_DATA_URL', '') }}"
+            DATA_PATH: "{{ env_var('FDL_DATA_PATH') }}"
             OVERRIDE_DATA_PATH: true
             META_TYPE: "'sqlite'"
             # 既定のままだと小さいテーブルがカタログの中に収まり parquet が
-            # 1 つも生成されない。データファイルの無いデータセットが公開されるので、常に切る
+            # 1 つも生成されない。fdl commit はインライン化された行を断るので、常に切る
             DATA_INLINING_ROW_LIMIT: 0
