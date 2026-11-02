@@ -1,5 +1,6 @@
 schema: main
 name: raw_mt_pref_pos
 description: 都道府県マスタ位置参照拡張
+published: false
 sources:
   - path: https://dataset.address-br.digital.go.jp/documents/535e5c01f4af4f5bba72618472f07db9/about

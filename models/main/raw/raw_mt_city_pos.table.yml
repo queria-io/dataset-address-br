@@ -1,5 +1,6 @@
 schema: main
 name: raw_mt_city_pos
 description: 市区町村マスタ位置参照拡張
+published: false
 sources:
   - path: https://dataset.address-br.digital.go.jp/documents/7108b74d9fad4e79997538ec40aa8015/about
