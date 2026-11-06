@@ -1,9 +1,8 @@
 schema: main
 name: mart_rsdtdsp_rsdt
 title: 住居表示 住居マスタ
-description: '住居表示を実施している町字の住居（「○丁目1番3号」の「3号」）と、その代表点。
-
-  「アドレス・ベース・レジストリ（住居表示-住居マスタデータ・位置参照拡張）」（デジタル庁）（https://dataset.address-br.digital.go.jp/）を加工して作成。'
+description: |-
+  住居表示を実施している町字の住居（「○丁目1番3号」の「3号」）と、その代表点です。
 keywords:
   - 住所
   - 住居表示
@@ -38,4 +37,4 @@ fields:
     description: 住居番号の枝番（「3号の2」の「2」）。無い住居は NULL
   - name: geometry
     title: 代表点
-    description: '位置参照拡張の代表点座標（経緯度）。元データの測地系は JGD2011 (EPSG:6668)。代表点が複数ある住居は平均。代表点の無い住居は NULL'
+    description: 代表点（経緯度、JGD2011、変換していない）。無ければ NULL

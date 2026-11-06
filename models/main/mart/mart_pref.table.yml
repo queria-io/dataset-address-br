@@ -1,11 +1,8 @@
 schema: main
 name: mart_pref
 title: 都道府県マスタ
-description: '全国の都道府県マスタ。
-
-  「アドレス・ベース・レジストリ（都道府県マスタデータ）」（デジタル庁）（https://dataset.address-br.digital.go.jp/）を加工して作成。
-
-  位置参照拡張の代表点座標を geometry に変換。'
+description: |-
+  全国の都道府県マスタです。都道府県コード・名称と代表点を持ちます。
 keywords:
   - マスタ
   - 都道府県
