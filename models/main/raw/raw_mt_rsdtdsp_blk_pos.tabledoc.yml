@@ -1,0 +1,4 @@
+$schema: https://tabledoc.queria.io/schemas/table/v1.json
+description: 住居表示-街区マスタ位置参照拡張
+sources:
+  - dataset

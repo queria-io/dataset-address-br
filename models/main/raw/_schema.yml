@@ -2,37 +2,25 @@ version: 2
 
 models:
   - name: raw_mt_pref
-    description: 都道府県マスタ
 
   - name: raw_mt_pref_pos
-    description: 都道府県マスタ位置参照拡張
 
   - name: raw_mt_city
-    description: 市区町村マスタ
 
   - name: raw_mt_city_pos
-    description: 市区町村マスタ位置参照拡張
 
   - name: raw_mt_town
-    description: 町字マスタ
 
   - name: raw_mt_town_fullset
-    description: 町字マスタ（フルセット）
 
   - name: raw_mt_town_pos
-    description: 町字マスタ位置参照拡張
 
   - name: raw_mt_rsdtdsp_blk
-    description: 住居表示-街区マスタ
 
   - name: raw_mt_rsdtdsp_blk_pos
-    description: 住居表示-街区マスタ位置参照拡張
 
   - name: raw_mt_rsdtdsp_rsdt
-    description: 住居表示-住居マスタ
 
   - name: raw_mt_rsdtdsp_rsdt_pos
-    description: 住居表示-住居マスタ位置参照拡張
 
   - name: raw_mt_parcel
-    description: 地番マスタに位置参照拡張の代表点を付けたもの（市区町村ごとに main.py が結合する）

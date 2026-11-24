@@ -1,22 +1,20 @@
-schema: main
-name: mart_pref
+$schema: https://tabledoc.queria.io/schemas/table/v1.json
 title: 都道府県マスタ
-description: |-
-  全国の都道府県マスタです。都道府県コード・名称と代表点を持ちます。
-keywords:
+description: 全国の都道府県マスタです。都道府県コード・名称と代表点を持ちます。
+topics:
   - マスタ
   - 都道府県
   - 地方公共団体コード
 sources:
-  - path: https://dataset.address-br.digital.go.jp/documents/45bcb60e4dc747b58def5493ab829825/about
-fields:
+  - about-2
+columns:
   - name: lg_code
     title: 全国地方公共団体コード
     description: 6桁（検査数字あり）
   - name: pref_code
     title: 都道府県コード
     description: 2桁
-    annotations: { queria: { semantic: { role: entity, name: prefecture } } }
+    entity: prefecture
   - name: pref_name
     title: 都道府県名
   - name: pref_name_kana

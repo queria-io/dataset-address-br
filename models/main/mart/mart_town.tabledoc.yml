@@ -1,22 +1,21 @@
-schema: main
-name: mart_town
+$schema: https://tabledoc.queria.io/schemas/table/v1.json
 title: 町字マスタ
 description: |-
   全国の町字（大字・町・丁目・小字）のマスタです。名称・カナ・郵便番号・住居表示の実施の有無・代表点を持ちます。
 
   - 丁目の表記は市区町村ごとに違います（「１丁目」「三丁目」）。住所の文字列と照合するときは正規化してください
   - 代表点が無い町字（主に小字）は geometry が NULL です
-keywords:
+topics:
   - マスタ
   - 町字
   - 住所
 sources:
-  - path: https://dataset.address-br.digital.go.jp/documents/b80e77a0e2d24e5692be4af885eb3de7/about
-fields:
+  - about-3
+columns:
   - name: lg_code
     title: 全国地方公共団体コード
     description: 6桁（検査数字あり）
-    annotations: { queria: { semantic: { role: entity, name: city } } }
+    entity: city
   - name: machiaza_id
     title: 町字ID
   - name: machiaza_type
@@ -24,7 +23,7 @@ fields:
   - name: pref_code
     title: 都道府県コード
     description: 2桁
-    annotations: { queria: { semantic: { role: entity, name: prefecture } } }
+    entity: prefecture
   - name: pref_name
     title: 都道府県名
   - name: pref_name_kana
@@ -54,7 +53,7 @@ fields:
     title: 小字名（カナ）
   - name: post_code
     title: 郵便番号
-    annotations: { queria: { semantic: { role: entity, name: postal_code } } }
+    entity: postal_code
   - name: efct_date
     title: 効力発生日
   - name: rsdt_addr_flg

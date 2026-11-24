@@ -1,0 +1,54 @@
+$schema: https://tabledoc.queria.io/schemas/dataset/v1.json
+name: address_br
+title: アドレス・ベース・レジストリ
+description: |-
+  デジタル庁のアドレス・ベース・レジストリの、都道府県・市区町村・町字のマスタと、住居表示の街区・住居、地番のマスタです。それぞれ代表点の座標を持ち、住所の正規化やジオコーディングに使えます。
+
+  出典：「アドレス・ベース・レジストリ」（デジタル庁）を加工して作成。
+image: cover.png
+topics:
+  - 住所
+  - マスタ
+  - 地方公共団体コード
+  - デジタル庁
+  - 住居表示
+  - 地番
+  - 位置参照
+synonyms:
+  - アドレス・ベース・レジストリ
+  - ABR
+  - 住所マスタ
+  - 町字マスタ
+  - 住居表示
+  - ジオコーディング
+language: ja
+licenses:
+  - JP-DIGITAL-ADDRESS-BR
+sources:
+  - id: dataset
+    title: アドレス・ベース・レジストリ（デジタル庁）
+    url: https://dataset.address-br.digital.go.jp/
+  - id: about
+    url: https://dataset.address-br.digital.go.jp/documents/5e130d8117c6426fa1f53a5dbf90cb74/about
+  - id: about-2
+    url: https://dataset.address-br.digital.go.jp/documents/45bcb60e4dc747b58def5493ab829825/about
+  - id: about-3
+    url: https://dataset.address-br.digital.go.jp/documents/b80e77a0e2d24e5692be4af885eb3de7/about
+  - id: about-4
+    url: https://dataset.address-br.digital.go.jp/documents/7108b74d9fad4e79997538ec40aa8015/about
+  - id: about-5
+    url: https://dataset.address-br.digital.go.jp/documents/535e5c01f4af4f5bba72618472f07db9/about
+  - id: about-6
+    url: https://dataset.address-br.digital.go.jp/documents/061100c569ac4ba49cd4a6cda21b5a8d/about
+contributors:
+  - id: digital
+    title: デジタル庁
+    url: https://www.digital.go.jp/
+    roles:
+      - rightsHolder
+spatial_coverage:
+  - JP
+update_frequency: monthly
+schemas:
+  - name: main
+    title: メイン

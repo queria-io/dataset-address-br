@@ -3,8 +3,6 @@ name: Sync
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "*.md"
   schedule:
     - cron: "0 19 1 * *" # 毎月1日 04:00 JST
   workflow_dispatch:
@@ -15,9 +13,14 @@ concurrency:
 
 jobs:
   sync:
+    # Queria への書き込みは GitHub Actions の OIDC で 1 時間のトークンを取って行う
+    permissions:
+      contents: read
+      id-token: write
     uses: queria-io/dataset-shared/.github/workflows/sync.yml@main
     with:
       dataset_name: address_br
       # 地番マスタは市区町村ごとに約 3,800 個の zip を取り、約 2 億行を書く。既定の 90 分では足りない見込み
       timeout_minutes: 240
-    secrets: inherit
+    secrets:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

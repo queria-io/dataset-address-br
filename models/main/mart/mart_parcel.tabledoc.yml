@@ -1,21 +1,20 @@
-schema: main
-name: mart_parcel
+$schema: https://tabledoc.queria.io/schemas/table/v1.json
 title: 地番マスタ
 description: |-
   地番（「○番地」「○番○」）の一覧と、座標の付く筆の代表点です。
 
   - 座標が付くのは一部の筆だけです（日野市で 10%、千代田区で 1%）
-keywords:
+topics:
   - 住所
   - 地番
   - 位置参照
 sources:
-  - path: https://dataset.address-br.digital.go.jp/
-fields:
+  - dataset
+columns:
   - name: lg_code
     title: 全国地方公共団体コード
     description: 6桁（検査数字あり）
-    annotations: { queria: { semantic: { role: entity, name: city } } }
+    entity: city
   - name: machiaza_id
     title: 町字ID
     description: mart_town と lg_code・machiaza_id で結合する
