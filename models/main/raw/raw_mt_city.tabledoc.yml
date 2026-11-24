@@ -1,0 +1,4 @@
+$schema: https://tabledoc.queria.io/schemas/table/v1.json
+description: 市区町村マスタ
+sources:
+  - about

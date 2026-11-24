@@ -1,0 +1,4 @@
+$schema: https://tabledoc.queria.io/schemas/table/v1.json
+description: 都道府県マスタ
+sources:
+  - about-2

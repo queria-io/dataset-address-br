@@ -1,0 +1,4 @@
+$schema: https://tabledoc.queria.io/schemas/table/v1.json
+description: 市区町村マスタ位置参照拡張
+sources:
+  - about-4
