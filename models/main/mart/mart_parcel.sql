@@ -17,4 +17,4 @@ SELECT
     prc_num3,
     rsdt_addr_flg,
     ST_Point(rep_lon, rep_lat) AS geometry
-FROM {{ ref('raw_mt_parcel') }}
+FROM {{ ref('stg_mt_parcel') }}
